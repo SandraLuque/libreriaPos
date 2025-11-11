@@ -3,6 +3,7 @@ export {};
 declare global {
   interface Window {
     electronAPI: {
+      signupSuccess: () => void;
       loginSuccess: () => void;
       sendMessage: (msg: string) => void;
       onMessageReply: (callback: (data: string) => void) => void;

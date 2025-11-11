@@ -2,6 +2,9 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
+  // Singup bridge
+  signupSuccess: () => ipcRenderer.send("signup-success"),
+
   // Login bridge
   loginSuccess: () => ipcRenderer.send("login-success"),
 

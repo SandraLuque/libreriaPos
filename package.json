@@ -29,6 +29,7 @@
       "electron/main.cjs",
       "node_modules/**/*",
       "public/fidelogo.ico",
+      "public/*",
       "package.json"
     ],
     "nsis": {
@@ -40,7 +41,10 @@
     "directories": {
       "output": "releases",
       "buildResources": "dist"
-    }
+    },
+    "extraResources": [
+      "./demo_table.db"
+    ]
   },
   "dependencies": {
     "react": "19.1.1",
@@ -56,7 +60,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "9.2.1",
     "electron": "39.0.0",
-    "electron-builder": "26.0.12",
+    "electron-builder": "^26.0.12",
     "eslint": "9.36.0",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.22",

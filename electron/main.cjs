@@ -1,11 +1,31 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+//const { initDatabase } = require("./db/database.cjs");
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
 let loginWindow = null;
+let signupWindow = null;
 
 //CREATE WINDOWS
+
+function createSignupWindow() {
+  signupWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, "../public/fidelogo.ico"),
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+    },
+  });
+
+  signupWindow.loadURL("http://localhost:6969/signup");
+  signupWindow.on("closed", () => {
+    signupWindow = null;
+  });
+}
 
 function createLoginWindow() {
   loginWindow = new BrowserWindow({
@@ -45,6 +65,12 @@ function createMainWindow() {
 
 // LISTENERS
 
+// OPEN LOGIN
+ipcMain.on("signup-success", () => {
+  if (signupWindow) signupWindow.close();
+  createLoginWindow();
+});
+
 //OPEN DASHBOARD
 ipcMain.on("login-success", () => {
   if (loginWindow) loginWindow.close();
@@ -71,10 +97,11 @@ ipcMain.on("message_private", (event, msg) => {
 //INITIALIZATION
 
 app.whenReady().then(() => {
-  createLoginWindow();
+  //initDatabase();
+  createSignupWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createLoginWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createSignupWindow();
   });
 });
 
