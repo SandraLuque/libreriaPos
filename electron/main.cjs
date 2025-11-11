@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
-//const { initDatabase } = require("./db/database.cjs");
+const { initDatabase } = require("./db/database.cjs");
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
@@ -96,8 +96,8 @@ ipcMain.on("message_private", (event, msg) => {
 
 //INITIALIZATION
 
-app.whenReady().then(() => {
-  //initDatabase();
+app.whenReady().then(async () => {
+  const db = await initDatabase();
   createSignupWindow();
 
   app.on("activate", () => {

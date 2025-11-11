@@ -1,59 +1,59 @@
-// src/main/database.js
-const Database = require("better-sqlite3");
+const initSqlJs = require("sql.js");
+const fs = require("fs");
 const path = require("path");
 const { app } = require("electron");
 
-let db = null;
+async function initDatabase() {
+  const SQL = await initSqlJs();
 
-function initDatabase() {
   const dbPath = path.join(app.getPath("userData"), "app.db");
-  db = new Database(dbPath);
-  db.pragma("journal_mode = WAL"); // Mejora rendimiento y seguridad
+  let db;
 
-  console.log("📦 Inicializando base de datos en:", dbPath);
+  // Si existe DB en disco, cargarla
+  if (fs.existsSync(dbPath)) {
+    const fileBuffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+    console.log("📦 Base de datos cargada desde disco:", dbPath);
+  } else {
+    db = new SQL.Database(); // Nueva DB en memoria
+    console.log("📦 Base de datos nueva en memoria");
+  }
 
-  // === CREATE TABLES ===
-
-  // ROL
-  db.prepare(
-    `
+  // Crear tabla rol si no existe
+  db.run(`
     CREATE TABLE IF NOT EXISTS rol (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       description TEXT NOT NULL,
       number TEXT NOT NULL,
-      created_at DATETIME DEFAULT (datetime('now'))
-    )
-  `
-  ).run();
-
-  // USERS
-  db.prepare(
-    `
-    CREATE TABLE IF NOT EXISTS user (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      lastname TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      phone TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      created_at DATETIME DEFAULT (datetime('now')),
-      rol_id INTEGER NOT NULL,
-      FOREIGN KEY (rol_id) REFERENCES rol(id)
-    )
-  `
-  ).run();
-
-  console.log("✅ Tablas creadas (si no existían).");
-  return db;
-}
-
-function getDb() {
-  if (!db) {
-    throw new Error(
-      "❌ Database not initialized! Llama a initDatabase() primero."
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  // Insertar roles iniciales solo si no existen
+  const result = db.exec("SELECT COUNT(*) AS count FROM rol;");
+  const countRol = result[0]?.values[0][0] || 0;
+
+  if (countRol === 0) {
+    db.run("INSERT INTO rol (description, number) VALUES (?, ?);", [
+      "admin",
+      "1",
+    ]);
+    db.run("INSERT INTO rol (description, number) VALUES (?, ?);", [
+      "user",
+      "2",
+    ]);
+    console.log("✅ Roles iniciales insertados (admin, user)");
+  } else {
+    console.log("📦 Roles ya existentes, no se insertó nada");
   }
+
+  // Guardar la DB en disco
+  const data = Buffer.from(db.export());
+  fs.writeFileSync(dbPath, data);
+
+  console.log("✅ Base de datos persistida en:", dbPath);
+
   return db;
 }
 
-module.exports = { initDatabase, getDb };
+module.exports = { initDatabase };
