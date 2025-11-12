@@ -95,7 +95,6 @@ ipcMain.on("message_private", (event, msg) => {
 });
 
 //INITIALIZATION
-
 app.whenReady().then(async () => {
   const db = await initDatabase();
   createSignupWindow();
