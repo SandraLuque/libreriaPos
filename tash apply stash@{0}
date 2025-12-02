@@ -1,0 +1,206 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex d02d6e0..f470aa2 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,5 +1,5 @@[m
+ <p align="center">[m
+[31m-  <img width="300px" src="./public/fidelogoc.png" alt="LogoFidePOS"/>[m
+[32m+[m[32m  <img width="300px" src="./public/fidelogoc.png" alt="Logolibreriapos"/>[m
+ </p>[m
+ [m
+ <h3 align="center">[m
+[36m@@ -46,8 +46,8 @@[m [mAplicación de escritorio de punto de venta para PyMEs. Permite gestionar ventas[m
+ To use this project locally, run the following commands in your terminal:[m
+ [m
+ ```bash[m
+[31m-git clone https://github.com/EricV29/fidePOS.git[m
+[31m-cd fidePOS[m
+[32m+[m[32mgit clone https://github.com/EricV29/libreriapos.git[m
+[32m+[m[32mcd libreriapos[m
+ npm install[m
+ ```[m
+ [m
+[1mdiff --git a/electron/db/database.cjs b/electron/db/database.cjs[m
+[1mindex 7d5e625..8b50c4f 100644[m
+[1m--- a/electron/db/database.cjs[m
+[1m+++ b/electron/db/database.cjs[m
+[36m@@ -1,197 +1,373 @@[m
+[31m-const initSqlJs = require("sql.js");[m
+[31m-const fs = require("fs");[m
+[31m-const path = require("path");[m
+[31m-const { app } = require("electron");[m
+[31m-[m
+[31m-async function initDatabase() {[m
+[31m-  const SQL = await initSqlJs();[m
+[31m-[m
+[31m-  const dbPath = path.join(app.getPath("userData"), "app.db");[m
+[31m-  let db;[m
+[31m-[m
+[31m-  // CREATE DB IF NOT EXISTING[m
+[31m-  if (fs.existsSync(dbPath)) {[m
+[31m-    const fileBuffer = fs.readFileSync(dbPath);[m
+[31m-    db = new SQL.Database(fileBuffer);[m
+[31m-    console.log("📦 DB loaded from disk:", dbPath);[m
+[31m-  } else {[m
+[31m-    db = new SQL.Database();[m
+[31m-    console.log("📦 New DB created on disk");[m
+[31m-  }[m
+[31m-[m
+[31m-  // CREATE ROL TABLE[m
+[31m-  db.run(`[m
+[31m-    CREATE TABLE IF NOT EXISTS rol ([m
+[31m-      id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[31m-      code INTEGER UNIQUE NOT NULL,[m
+[31m-      description TEXT NOT NULL,[m
+[31m-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP[m
+[31m-    );[m
+[31m-  `);[m
+[31m-[m
+[31m-  // CREATE SATUS TABLE[m
+[31m-  db.run(`[m
+[31m-    CREATE TABLE IF NOT EXISTS status ([m
+[31m-      id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[31m-      code INTEGER UNIQUE NOT NULL,[m
+[31m-      description TEXT NOT NULL,[m
+[31m-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP[m
+[32m+[m[32m/**[m
+[32m+[m[32m * Database Manager para libreriapos[m
+[32m+[m[32m * SQLite con better-sqlite3[m
+[32m+[m[32m */[m
+[32m+[m
+[32m+[m[32mconst Database = require('better-sqlite3');[m
+[32m+[m[32mconst path = require('path');[m
+[32m+[m[32mconst fs = require('fs');[m
+[32m+[m[32mconst { app } = require('electron');[m
+[32m+[m
+[32m+[m[32mclass DatabaseManager {[m
+[32m+[m[32m  constructor() {[m
+[32m+[m[32m    this.db = null;[m
+[32m+[m[32m    this.dbPath = null;[m
+[32m+[m[32m    this.initialize();[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  initialize() {[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      // Ruta de la base de datos en userData[m
+[32m+[m[32m      const userDataPath = app.getPath('userData');[m
+[32m+[m[32m      this.dbPath = path.join(userDataPath, 'tienda.db');[m
+[32m+[m[41m      [m
+[32m+[m[32m      console.log('📁 Database path:', this.dbPath);[m
+[32m+[m
+[32m+[m[32m      // Crear directorio si no existe[m
+[32m+[m[32m      const dbDir = path.dirname(this.dbPath);[m
+[32m+[m[32m      if (!fs.existsSync(dbDir)) {[m
+[32m+[m[32m        fs.mkdirSync(dbDir, { recursive: true });[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Conectar a SQLite[m
+[32m+[m[32m      this.db = new Database(this.dbPath, {[m
+[32m+[m[32m        verbose: process.env.NODE_ENV === 'development' ? console.log : null[m
+[32m+[m[32m      });[m
+[32m+[m
+[32m+[m[32m      // Optimizaciones[m
+[32m+[m[32m      this.db.pragma('journal_mode = WAL');[m
+[32m+[m[32m      this.db.pragma('synchronous = NORMAL');[m
+[32m+[m[32m      this.db.pragma('foreign_keys = ON');[m
+[32m+[m
+[32m+[m[32m      // Verificar si necesita ejecutar schema[m
+[32m+[m[32m      const tableCount = this.db.prepare([m
+[32m+[m[32m        "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"[m
+[32m+[m[32m      ).get();[m
+[32m+[m
+[32m+[m[32m      if (tableCount.count === 0) {[m
+[32m+[m[32m        console.log('🔧 Ejecutando schema inicial...');[m
+[32m+[m[32m        this.runSchema();[m
+[32m+[m[32m      } else {[m
+[32m+[m[32m        console.log('✅ Base de datos cargada');[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      this.checkIntegrity();[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.error('❌ Error inicializando BD:', error);[m
+[32m+[m[32m      throw error;[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  runSchema() {[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      // Buscar schema.sql[m
+[32m+[m[32m      const schemaPath = path.join(__dirname, 'schema.sql');[m
+[32m+[m[41m      [m
+[32m+[m[32m      if (!fs.existsSync(schemaPath)) {[m
+[32m+[m[32m        throw new Error('schema.sql no encontrado en electron/db/');[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      const schema = fs.readFileSync(schemaPath, 'utf-8');[m
+[32m+[m[32m      this.db.exec(schema);[m
+[32m+[m[41m      [m
+[32m+[m[32m      console.log('✅ Schema ejecutado correctamente');[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.error('❌ Error ejecutando schema:', error);[m
+[32m+[m[32m      throw error;[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  checkIntegrity() {[m
+[32m+[m[32m    const result = this.db.pragma('integrity_check');[m
+[32m+[m[32m    if (result[0].integrity_check === 'ok') {[m
+[32m+[m[32m      console.log('✅ Integridad verificada');[m
+[32m+[m[32m      return true;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return false;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // Métodos base[m
+[32m+[m[32m  query(sql, params = []) {[m
+[32m+[m[32m    return this.db.prepare(sql).all(params);[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  get(sql, params = []) {[m
+[32m+[m[32m    return this.db.prepare(sql).get(params);[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  run(sql, params = []) {[m
+[32m+[m[32m    return this.db.prepare(sql).run(params);[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  transaction(callback) {[m
+[32m+[m[32m    const transaction = this.db.transaction(callback);[m
+[32m+[m[32m    return transaction();[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // ========================================[m
+[32m+[m[32m  // MÉTODOS DE NEGOCIO[m
+[32m+[m[32m  // ========================================[m
+[32m+[m
+[32m+[m[32m  // Autenticación[m
+[32m+[m[32m  authenticateUser(username) {[m
+[32m+[m[32m    return this.get([m
+[32m+[m[32m      'SELECT * FROM usuarios WHERE username = ? AND activo = 1',[m
+[32m+[m[32m      [username][m
+     );[m
+[31m-  `);[m
+[31m-[m
+[31m-  // INSERT ROLS IF NOT EXISTING[m
+[31m-  const resultRol = db.exec("SELECT COUNT(*) AS count FROM rol;");[m
+[31m-  const countRol = resultRol[0]?.values[0][0] || 0;[m
+[31m-[m
+[31m-  if (countRol === 0) {[m
+[31m-    db.run("INSERT INTO rol (code, description) VALUES (?, ?);", [[m
+[31m-      "1",[m
+[31m-      "admin",[m
+[31m-    ]);[m
+[31m-    db.run("INSERT INTO rol (code, description) VALUES (?, ?);", ["2", "user"]);[m
+[31m-    console.log("✅ Roles inserted (admin, user)");[m
+[31m-  } else {[m
+[31m-    console.log("📦 Roles already exist");[m
+[31m-  }[m
+[31m-[m
+[31m-  // INSERT STATUS IF NOT EXISTING[m
+[31m-  const resultStatus = db.exec("SELECT COUNT(*) AS count FROM status;");[m
+[31m-  const countStatus = resultStatus[0]?.values[0][0] || 0;[m
+[31m-[m
+[31m-  if (countStatus === 0) {[m
+[31m-    db.run("INSERT INTO status (code, description) VALUES (?, ?);", [[m
+[31m-      "0",[m
+[31m-      "desactive",[m
