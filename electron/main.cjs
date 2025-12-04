@@ -34,6 +34,10 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize();
+  });
+  
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
