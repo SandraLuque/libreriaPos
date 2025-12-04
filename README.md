@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="300px" src="./public/fidelogoc.png" alt="LogoFidePOS"/>
+  <img width="300px" src="./public/kiara.svg" alt="Logolibreriapos"/>
 </p>
 
 <h3 align="center">
@@ -46,8 +46,8 @@ Aplicación de escritorio de punto de venta para PyMEs. Permite gestionar ventas
 To use this project locally, run the following commands in your terminal:
 
 ```bash
-git clone https://github.com/EricV29/fidePOS.git
-cd fidePOS
+git clone https://github.com/EricV29/libreriapos.git
+cd libreriapos
 npm install
 ```
 
